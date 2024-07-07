@@ -4,7 +4,7 @@ let
 in
 {
   options.services.linusfri.mysql = {
-    enable = lib.mkEnableOption "Enable MySQL for Bravomedia dev environment.";
+    enable = lib.mkEnableOption "Enable MySQL.";
 
     package = lib.mkOption {
       type = lib.types.package;
