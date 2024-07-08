@@ -38,7 +38,7 @@ in
 
     port = lib.mkOption {
       type = lib.types.port;
-      description = "NGINX listen port for HTTPS.";
+      description = "NGINX listen port for HTTP.";
       default = 8000;
     };
 
