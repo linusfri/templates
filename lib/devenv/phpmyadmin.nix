@@ -90,6 +90,5 @@ in
 
   config = lib.mkIf cfg.enable {
     processes.phpmyadmin.exec = "${config.languages.php.package}/bin/php -S ${cfg.host}:${toString cfg.port} -t ${phpmyadmin}";
-    scripts.getpath.exec = "echo ${phpmyadmin}";
   };
 }
