@@ -71,8 +71,7 @@ for opts in $SPHINX_DB_NAMES; do
   echo "  # db_type=$db_type"
   echo "  # db_prefix=$db_prefix"
 
-  # $src comes from sphinx-search.nix and is folder this file resides in.
-  inc="$src/config.$db_type.sh"
+  inc="config.$db_type.sh"
 
   if [[ ! -f "$inc" ]]; then
     echo "$inc not found"

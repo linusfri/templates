@@ -1,44 +1,32 @@
 { pkgs, lib, config, ... }:
 let
   inherit (lib) mkOption types;
-  inherit (pkgs) stdenv;
+  inherit (pkgs) sphinxsearch;
 
-  sphinxPkg = pkgs.sphinxsearch;
   cfg = config.services.linusfri.sphinxsearch;
 
-  sphinxsearch = stdenv.mkDerivation rec {
-    pname = "sphinxsearch";
-    version = "2.2.11";
-    dontUnpack = true;
-    src = ./.;
+  sphinxConfig = pkgs.runCommand "sphinx-config" {
+    SPHINX_SERVER_PORT = toString cfg.port;
+    SPHINX_SERVER = cfg.host;
+    SPHINX_DB = cfg.dbName;
 
-    nativeBuildInputs = [ sphinxPkg ];
+    SPHINX_DB_HOST = cfg.dbHost;
+    SPHINX_DB_USER = cfg.dbUser;
+    SPHINX_DB_PASS = cfg.dbPass;
+    SPHINX_DB_PORT = toString cfg.dbPort;
+    SPHINX_DB_NAMES = cfg.dbNames;
 
-    configurePhase = ''
-      # Sphinx Client
-      export SPHINX_SERVER_PORT="${toString cfg.port}"
-      export SPHINX_SERVER="${cfg.host}"
-      export SPHINX_DB="${cfg.dbName}"
+    # SPHINX_LOG = "${sphinxConfig}/sphinx.log";
+    # SPHINX_QUERY_LOG = "${sphinxConfig}/sphinx_query.log";
+    # SPHINX_PID = "${sphinxConfig}/searchd.pid";
+    # SPHINX_DATA = "${sphinxConfig}/data";
+  } ''
+    mkdir -p $out/etc
 
-      # Sphinx Server
-      export SPHINX_DB_HOST="${cfg.dbHost}"
-      export SPHINX_DB_USER="${cfg.dbUser}"
-      export SPHINX_DB_PASS="${cfg.dbPass}"
-      export SPHINX_DB_PORT="${toString cfg.dbPort}"
-      export SPHINX_DB_NAMES="${cfg.dbNames}"
-    '';
-
-    installPhase = ''
-      runHook preInstall
-
-      mkdir -p $out $out/etc
-      source ${src}/config.sh > sphinx.conf
-      cp sphinx.conf $out/etc
-
-      cp -r ${sphinxPkg}/* $out/
-      runHook postInstall
-    '';
-  };
+    cd ${./sphinx-search}
+    
+    source ./config.sh > $out/etc/sphinx.conf
+  '';
 in
 {
   options.services.linusfri.sphinxsearch = {
@@ -96,7 +84,7 @@ in
   config = lib.mkIf cfg.enable {
     env = {
       # Sphinx Client
-      SPHINX_SERVER_PORT = "${toString cfg.port}";
+      SPHINX_SERVER_PORT = toString cfg.port;
       SPHINX_SERVER = "${cfg.host}";
       SPHINX_DB = "${cfg.dbName}";
 
@@ -108,7 +96,6 @@ in
       SPHINX_DB_NAMES = "${cfg.dbNames}";
     };
 
-    processes.sphinxsearch.exec = "${sphinxsearch}/bin/sphinxsearch-searchd";
-    scripts.sphinxPath.exec = "echo ${sphinxsearch}";
+    processes.sphinxsearch.exec = "${sphinxsearch}/bin/sphinxsearch-searchd --config ${sphinxConfig}/etc/sphinx.conf";
   };
 }

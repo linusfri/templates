@@ -5,6 +5,6 @@
     ./mysql-db.nix
     ./phpmyadmin.nix
     ./php-server.nix
-    ./sphinx-search/sphinx-search.nix
+    ./sphinx-search.nix
   ];
 }
