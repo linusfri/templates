@@ -5,7 +5,8 @@ let
 
   cfg = config.services.linusfri.sphinxsearch;
 
-  sphinxConfig = pkgs.runCommand "sphinx-config" {
+  sphinxHome = "${config.env.DEVENV_STATE}/sphinx";
+  sphinxConfigEnv = {
     SPHINX_SERVER_PORT = toString cfg.port;
     SPHINX_SERVER = cfg.host;
     SPHINX_DB = cfg.dbName;
@@ -16,16 +17,23 @@ let
     SPHINX_DB_PORT = toString cfg.dbPort;
     SPHINX_DB_NAMES = cfg.dbNames;
 
-    # SPHINX_LOG = "${sphinxConfig}/sphinx.log";
-    # SPHINX_QUERY_LOG = "${sphinxConfig}/sphinx_query.log";
-    # SPHINX_PID = "${sphinxConfig}/searchd.pid";
-    # SPHINX_DATA = "${sphinxConfig}/data";
-  } ''
+    SPHINX_LOG = "${sphinxHome}/sphinx.log";
+    SPHINX_QUERY_LOG = "${sphinxHome}/sphinx_query.log";
+    SPHINX_PID = "${sphinxHome}/searchd.pid";
+    SPHINX_DATA = "${sphinxHome}/data";
+  };
+
+  sphinxConfig = pkgs.runCommand "sphinx-config" sphinxConfigEnv ''
     mkdir -p $out/etc
 
     cd ${./sphinx-search}
     
     source ./config.sh > $out/etc/sphinx.conf
+  '';
+
+  startScript = pkgs.writeShellScriptBin "start-sphinxsearch" ''
+    mkdir -p ${sphinxHome} ${sphinxHome}/data
+    exec ${sphinxsearch}/bin/sphinxsearch-searchd --config ${sphinxConfig}/etc/sphinx.conf
   '';
 in
 {
@@ -82,20 +90,8 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    env = {
-      # Sphinx Client
-      SPHINX_SERVER_PORT = toString cfg.port;
-      SPHINX_SERVER = "${cfg.host}";
-      SPHINX_DB = "${cfg.dbName}";
-
-      # Sphinx Server
-      SPHINX_DB_HOST = "${cfg.dbHost}";
-      SPHINX_DB_USER = "${cfg.dbUser}";
-      SPHINX_DB_PASS = "${cfg.dbPass}";
-      SPHINX_DB_PORT = "${toString cfg.dbPort}";
-      SPHINX_DB_NAMES = "${cfg.dbNames}";
-    };
-
-    processes.sphinxsearch.exec = "${sphinxsearch}/bin/sphinxsearch-searchd --config ${sphinxConfig}/etc/sphinx.conf";
+    scripts.indexer.exec = ''${sphinxsearch}/bin/sphinxsearch-indexer -c ${sphinxConfig}/etc/sphinx.conf "$@"'';
+    scripts.index.exec = ''indexer --all --rotate'';
+    processes.sphinxsearch.exec = "${startScript}/bin/start-sphinxsearch";
   };
 }
