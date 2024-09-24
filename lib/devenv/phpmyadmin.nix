@@ -80,12 +80,6 @@ in
       description = "Database password.";
       default = "1234";
     };
-
-    listenPort = lib.mkOption {
-      type = lib.types.port;
-      description = "The port which phpmyadmin should listen on.";
-      default = 9000;
-    };
   };
 
   config = lib.mkIf cfg.enable {
