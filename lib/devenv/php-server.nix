@@ -12,8 +12,10 @@ let
   serverName = lib.strings.concatMapStringsSep " " (domain: domain) cfg.domains;
 in
 {
+  imports = [ ./common.nix ];
+
   options.services.linusfri.phpServer = {
-    enable = lib.mkEnableOption "Enable NGINX and PHP-FPM for web server.";
+    enable = lib.mkEnableOption "Enable NGINX and PHP-FPM for dev environment.";
     
     serveDir = lib.mkOption {
       type = lib.types.str;
@@ -115,6 +117,8 @@ in
       SSL_CERT_KEY = "${config.env.DEVENV_STATE}/mkcert/${certificateName}-key.pem";
       SERVER_PORT = cfg.port;
       SERVER_SSL_PORT = cfg.sslPort;
+      MAIN_HTTPS_URL = mainFullHttpsUrl;
+      MAIN_HTTP_URL = mainFullHttpUrl;
     };
 
     packages = [ ];
@@ -125,10 +129,8 @@ in
         server {
           listen ${toString cfg.port};
           listen ${toString cfg.sslPort} ssl;
-          ${if numberOfHosts > 0 then ''
-            ssl_certificate     ${config.env.SSL_CERT};
-            ssl_certificate_key ${config.env.SSL_CERT_KEY};
-          '' else ""}
+          ssl_certificate     ${config.env.SSL_CERT};
+          ssl_certificate_key ${config.env.SSL_CERT_KEY};
           # ssl_protocols       TLSv1 TLSv1.1 TLSv1.2 TLSv1.3;
           # ssl_ciphers         HIGH:!aNULL:!MD5;
 
@@ -137,16 +139,10 @@ in
           server_name ${serverName};
 
           error_page 497 https://$server_name:$server_port$request_uri;
+          client_max_body_size 64m;
 
           location / {
             try_files $uri $uri/ /index.php$is_args$args;
-          }
-
-          location /phpmyadmin/ {
-            proxy_set_header X-Forwarded-Proto $scheme;
-            proxy_set_header Host $host;
-
-            proxy_pass "http://127.0.0.1:9000/";
           }
 
           location ~ \.php$ {
@@ -206,7 +202,6 @@ in
 
     processes = {
       php_error.exec = "touch ${config.env.DEVENV_STATE}/php_error; tail -f ${config.env.DEVENV_STATE}/php_error";
-      app_urls.exec = "echo SSL URL: ${mainFullHttpsUrl}; echo NON SSL URL: ${mainFullHttpUrl};";
     };
 
     scripts.browse.exec = "open 'https://${mainDomain}:${toString cfg.sslPort}'";
