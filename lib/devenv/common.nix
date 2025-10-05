@@ -5,5 +5,7 @@
   ...
 }:
 {
-
+  processes.current-env.exec = ''
+    devenv info
+  '';
 }
