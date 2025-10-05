@@ -104,7 +104,7 @@ in {
           name = cfg.user;
           password = cfg.password;
           ensurePermissions = {
-            "${dbName}.*" = "ALL PRIVILEGES";
+            "*.*" = "ALL PRIVILEGES";
           } // additionalPermissions;
         }
       ];
