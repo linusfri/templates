@@ -73,8 +73,8 @@ let
   
     wordpress = rec {
       WP_ENV = "development";
-      WP_SITEURL = if cfg.https then mainFullHttpsUrl else mainFullHttpUrl;
-      WP_HOME = "${WP_SITEURL}/wp";
+      WP_HOME = if cfg.https then mainFullHttpsUrl else mainFullHttpUrl;
+      WP_SITEURL = "${WP_HOME}/wp";
       ENABLE_BROWSERSYNC_SSL = "true";
       MAIN_DOMAIN = cfg.mainDomain;
 
