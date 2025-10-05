@@ -1,16 +1,29 @@
-{ pkgs, lib, config, ... }:
+{
+  pkgs,
+  lib,
+  config,
+  ...
+}:
 let
   cfg = config.services.linusfri.mysql;
 
-  additionalDatabases = map (dbName:
-    { name = dbName; }
-  ) cfg.additionalDbNames;
+  additionalDatabases = map (dbName: { name = dbName; }) cfg.additionalDbNames;
 
-  additionalPermissions = builtins.listToAttrs (map (dbName: { name = "${dbName}.*"; value = "ALL PRIVILEGES"; }) cfg.additionalDbNames);
+  additionalPermissions = builtins.listToAttrs (
+    map (dbName: {
+      name = "${dbName}.*";
+      value = "ALL PRIVILEGES";
+    }) cfg.additionalDbNames
+  );
 
   # If user has exported custom env variable for db name in local environment
-  dbName = if builtins.hasAttr "DEV_DB_NAME_OVERRIDE" config.env then config.env.DEV_DB_NAME_OVERRIDE else cfg.dbName;
-in {
+  dbName =
+    if builtins.hasAttr "DEV_DB_NAME_OVERRIDE" config.env then
+      config.env.DEV_DB_NAME_OVERRIDE
+    else
+      cfg.dbName;
+in
+{
   imports = [ ./common.nix ];
 
   options = {
@@ -57,7 +70,7 @@ in {
       additionalDbNames = lib.mkOption {
         type = lib.types.listOf lib.types.str;
         description = "Additional names of databases to create.";
-        default = [];
+        default = [ ];
       };
 
       tablePrefix = lib.mkOption {
@@ -65,7 +78,7 @@ in {
         description = "Project table prefix.";
         default = "wp_";
       };
-      
+
       settings = lib.mkOption {
         type = lib.types.lazyAttrsOf (lib.types.lazyAttrsOf lib.types.anything);
         default = {
@@ -97,7 +110,8 @@ in {
 
       initialDatabases = [
         { name = dbName; }
-      ] ++ additionalDatabases;
+      ]
+      ++ additionalDatabases;
       settings = cfg.settings;
       ensureUsers = lib.mkDefault [
         {
@@ -105,11 +119,14 @@ in {
           password = cfg.password;
           ensurePermissions = {
             "*.*" = "ALL PRIVILEGES";
-          } // additionalPermissions;
+          }
+          // additionalPermissions;
         }
       ];
     };
 
-    scripts.mysql-local.exec = "mysql -u '${cfg.user}' --password='${cfg.password}' -h '${cfg.host}' '${dbName}' \"$@\"";
+    scripts.mysql-local.exec = ''
+      mysql -u "${cfg.user}" --password="${cfg.password}" -h "${cfg.host}" "${dbName}" "$@"
+    '';
   };
 }
